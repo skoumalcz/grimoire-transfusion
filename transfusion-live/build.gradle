@@ -1,0 +1,19 @@
+plugins {
+    id 'project.build'
+}
+
+android {
+    kotlinOptions {
+        freeCompilerArgs = ["-Xopt-in=kotlin.RequiresOptIn"]
+    }
+
+    buildFeatures {
+        dataBinding true
+    }
+}
+
+dependencies {
+
+    compileOnly("androidx.lifecycle:lifecycle-extensions:2.2.0")
+
+}

@@ -1,0 +1,23 @@
+plugins {
+    id 'project.build'
+}
+
+android {
+    kotlinOptions {
+        freeCompilerArgs = ["-Xopt-in=kotlin.RequiresOptIn"]
+    }
+
+    buildFeatures {
+        dataBinding true
+    }
+}
+
+dependencies {
+
+    compileOnly("androidx.fragment:fragment:1.2.5")
+    compileOnly("androidx.activity:activity:1.1.0")
+    compileOnly("androidx.lifecycle:lifecycle-runtime-ktx:2.2.0")
+
+    implementation("com.skoumal.grimoire:talisman-seal:1.0.0-alpha02")
+
+}

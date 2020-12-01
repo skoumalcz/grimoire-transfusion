@@ -1,0 +1,23 @@
+plugins {
+    id 'project.build'
+}
+
+repositories {
+    mavenLocal()
+}
+
+android {
+    kotlinOptions {
+        freeCompilerArgs = ["-Xopt-in=kotlin.RequiresOptIn"]
+    }
+
+    buildFeatures {
+        dataBinding true
+    }
+}
+
+dependencies {
+
+    implementation("com.skoumal.grimoire:talisman:1.0.0-alpha02")
+
+}
