@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="bintrayPublish" />
+          <option value="bintrayUpload" />
         </list>
       </option>
       <option name="vmOptions" value="" />
