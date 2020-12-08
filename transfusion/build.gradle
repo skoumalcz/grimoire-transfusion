@@ -18,6 +18,6 @@ android {
 
 dependencies {
 
-    implementation("com.skoumal.grimoire:talisman:1.0.0-alpha02")
+    implementation("com.skoumal.grimoire:talisman:1.0.0-beta01")
 
 }
