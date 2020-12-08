@@ -1,9 +1,10 @@
 package com.skoumal.grimoire.transfusion
 
-import com.skoumal.grimoire.talisman.Vessel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.consumeAsFlow
 
 @OptIn(ExperimentalCoroutinesApi::class)
 interface Transfusion<E> {
@@ -29,18 +30,18 @@ interface Transfusion<E> {
 @OptIn(ExperimentalCoroutinesApi::class)
 private class DefaultTransfusion<E> : Transfusion<E> {
 
-    private val viewEvents = Vessel<E>(Channel.BUFFERED)
+    private val viewEvents = BroadcastChannel<E>(Channel.BUFFERED)
 
     override fun openFlow(): Flow<E> {
-        return viewEvents.dock()
+        return viewEvents.openSubscription().consumeAsFlow()
     }
 
     override fun offerToFlow(element: E): Boolean {
-        return viewEvents.sail(element)
+        return viewEvents.offer(element)
     }
 
     override fun disposeFlow() {
-        viewEvents.sink()
+        viewEvents.close()
     }
 
 }

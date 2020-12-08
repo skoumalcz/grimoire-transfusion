@@ -16,6 +16,7 @@ internal class FragmentTransfusionFlowConsumer<C : Cell>(
     private var job: Job? = null
 
     override fun digest(flow: Flow<C>) {
+        job?.cancel()
         job = launch { flow.consume() }
     }
 
