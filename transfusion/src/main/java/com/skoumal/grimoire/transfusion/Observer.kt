@@ -69,10 +69,10 @@ private class DefaultObserver : Observer {
 
 /**
  * Declares delegated property in [Observer] parent. This property is available for DataBinding
- * to be observed as usual. The only caveat is that in order for binding to generate the [fieldId]
+ * to be observed as usual. The only caveat is that in order for binding to generate the [fieldIds]
  * it has to be annotated accordingly.
  *
- * Either ways you can completely omit the [fieldId] and the delegate will automatically invoke
+ * Either ways you can completely omit the [fieldIds] and the delegate will automatically invoke
  * [Observer.notifyChange]. Be very careful, as this will refresh all fields.
  *
  * The annotation however give very strict control over your internal fields and overall reduce
@@ -104,7 +104,7 @@ private class DefaultObserver : Observer {
  * @set:Bindable
  * var myField by observable(defaultValue, BR.myField, BR.myTransformedField)
  *
- * var myTransformedField
+ * var myTransformedField: TransformationResult
  *      @Bindable get() {
  *          return myField.transform()
  *      }
