@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runBlockingTest
 import org.junit.Test
 
-class EnvironmentsTest {
+class EnvironmentsFactoryTest {
 
     @Test
     fun `factory attaches all environments`() {
