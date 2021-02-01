@@ -13,18 +13,33 @@ private typealias E = Environment
 class Environments<Key : K, Env : E> {
 
     internal val stream = BroadcastChannel<Env>(Channel.CONFLATED)
-    internal val available = hashMapOf<Key, Env>()
+    internal val available = hashMapOf<Key, Lazy<Env>>()
+
+    init {
+        require(!isInstantiated) { "Cannot create more then one set of environments!" }
+        isInstantiated = true
+    }
+
+    companion object {
+
+        @Volatile
+        internal var isInstantiated: Boolean = false
+
+    }
 
 }
 
 // region Attaching environments
 
-operator fun <Key : K, Env : E> Environments<Key, Env>.set(key: Key, env: Env) {
+operator fun <Key : K, Env : E> Environments<Key, Env>.set(key: Key, env: Lazy<Env>) {
     available[key] = env
 }
 
-fun <Key : K, Env : E> Environments<Key, Env>.remove(env: Env) = available
-    .filter { it.value === env }
+operator fun <Key : K, Env : E> Environments<Key, Env>.set(key: Key, env: () -> Env) =
+    set(key, lazy(env))
+
+internal fun <Key : K, Env : E> Environments<Key, Env>.remove(env: Env) = available
+    .filter { it.value.value === env }
     .forEach { remove(it.key) }
 
 fun <Key : K, Env : E> Environments<Key, Env>.remove(tag: Key) =
@@ -39,13 +54,13 @@ internal suspend fun <Key : K, Env : E> Environments<Key, Env>.apply(env: Env) {
 }
 
 suspend fun <Key : K, Env : E> Environments<Key, Env>.apply(key: Key) =
-    apply(available.getValue(key))
+    apply(available.getValue(key).value)
 
-fun <Key : K, Env : E> Environments<Key, Env>.offer(env: Env) =
+internal fun <Key : K, Env : E> Environments<Key, Env>.offer(env: Env) =
     stream.offer(env)
 
 fun <Key : K, Env : E> Environments<Key, Env>.offer(key: Key) =
-    offer(available.getValue(key))
+    offer(available.getValue(key).value)
 
 // endregion
 

@@ -2,10 +2,10 @@ package com.skoumal.grimoire.transfusion.environment
 
 class EnvironmentsFactory<Key : Any, Env : Environment> {
 
-    private val envs = hashMapOf<Key, Env>()
+    private val envs = hashMapOf<Key, Lazy<Env>>()
     private var active: Key? = null
 
-    fun addEnvironment(key: Key, env: Env) = apply {
+    fun addEnvironment(key: Key, env: Lazy<Env>) = apply {
         envs[key] = env
     }
 
@@ -29,4 +29,11 @@ class EnvironmentsFactory<Key : Any, Env : Environment> {
         return environments
     }
 
+}
+
+fun <Key : Any, Env : Environment> EnvironmentsFactory<Key, Env>.addEnvironment(
+    key: Key,
+    body: () -> Env
+) = apply {
+    addEnvironment(key, lazy(body))
 }

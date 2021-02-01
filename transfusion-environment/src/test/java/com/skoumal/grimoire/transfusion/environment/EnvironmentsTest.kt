@@ -5,16 +5,24 @@ package com.skoumal.grimoire.transfusion.environment
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.test.runBlockingTest
+import org.junit.Before
 import org.junit.Test
 
 class EnvironmentsTest {
+
+    @Before
+    fun setUp() {
+        Environments.isInstantiated = false
+    }
+
+    // ---
 
     @Test
     fun `environments can be consumed multiple times`() {
         val staging = Env.Staging()
         val envs = envs
 
-        envs[Type.Staging] = staging
+        envs[Type.Staging] = lazy { staging }
 
         runBlockingTest {
             envs.apply(Type.Staging)
@@ -37,8 +45,8 @@ class EnvironmentsTest {
         val envs = envs
 
         runBlockingTest {
-            envs[Type.Staging] = staging
-            envs[Type.Prod] = prod
+            envs[Type.Staging] = lazy { staging }
+            envs[Type.Prod] = lazy { prod }
 
             var appliedEnv: Env = staging
             var visitedTimes = 0
@@ -63,7 +71,7 @@ class EnvironmentsTest {
     @Test
     fun `removed environments cannot be activated`() {
         val envs = envs
-        envs[Type.Staging] = Env.Staging()
+        envs[Type.Staging] = lazy { Env.Staging() }
 
         runBlockingTest {
             envs.remove(Type.Staging)
@@ -78,7 +86,7 @@ class EnvironmentsTest {
     @Test
     fun `removed environments' keys are not present`() {
         val envs = envs
-        envs[Type.Staging] = Env.Staging()
+        envs[Type.Staging] = lazy { Env.Staging() }
         envs.remove(Type.Staging)
 
         assertThat(envs.keys()).doesNotContain(Type.Staging)
@@ -89,7 +97,7 @@ class EnvironmentsTest {
         val env = Env.Staging()
         val envs = envs
 
-        envs[Type.Staging] = env
+        envs[Type.Staging] = lazy { env }
         assertThat(envs.keys()).isNotEmpty()
 
         envs.remove(env)
@@ -102,7 +110,7 @@ class EnvironmentsTest {
         val staging = Env.Staging()
         val envs = envs
 
-        envs[Type.Staging] = staging
+        envs[Type.Staging] = lazy { staging }
 
         runBlockingTest {
             envs.apply(Type.Staging)
@@ -116,12 +124,12 @@ class EnvironmentsTest {
     @Test
     fun `added environments do not influence stream`() {
         val envs = envs
-        envs[Type.Initial] = Env.Initial
+        envs[Type.Initial] = lazy { Env.Initial }
         envs.offer(Type.Initial)
         runBlockingTest {
             assertThat(envs.current()).isSameInstanceAs(Env.Initial)
 
-            envs[Type.Staging] = Env.Staging()
+            envs[Type.Staging] = lazy { Env.Staging() }
 
             assertThat(envs.current()).isSameInstanceAs(Env.Initial)
         }

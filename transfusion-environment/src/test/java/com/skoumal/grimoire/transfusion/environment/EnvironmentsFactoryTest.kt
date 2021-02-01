@@ -2,25 +2,33 @@ package com.skoumal.grimoire.transfusion.environment
 
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runBlockingTest
+import org.junit.Before
 import org.junit.Test
 
 class EnvironmentsFactoryTest {
+
+    @Before
+    fun setUp() {
+        Environments.isInstantiated = false
+    }
+
+    // ---
 
     @Test
     fun `factory attaches all environments`() {
         val staging = Env.Staging(Any(), Any())
         val prod = Env.Production(Any(), Any())
         val envs = EnvironmentsFactory<EnvKey, Env>()
-            .addEnvironment(EnvKey.Debug, staging)
-            .addEnvironment(EnvKey.Alpha, staging)
-            .addEnvironment(EnvKey.Beta, prod)
-            .addEnvironment(EnvKey.Release, prod)
+            .addEnvironment(EnvKey.Debug) { staging }
+            .addEnvironment(EnvKey.Alpha) { staging }
+            .addEnvironment(EnvKey.Beta) { prod }
+            .addEnvironment(EnvKey.Release) { prod }
             .build()
 
-        assertThat(envs.available).containsEntry(EnvKey.Debug, staging)
-        assertThat(envs.available).containsEntry(EnvKey.Alpha, staging)
-        assertThat(envs.available).containsEntry(EnvKey.Beta, prod)
-        assertThat(envs.available).containsEntry(EnvKey.Release, prod)
+        assertThat(envs.available).containsKey(EnvKey.Debug)
+        assertThat(envs.available).containsKey(EnvKey.Alpha)
+        assertThat(envs.available).containsKey(EnvKey.Beta)
+        assertThat(envs.available).containsKey(EnvKey.Release)
     }
 
     @Test
@@ -28,10 +36,10 @@ class EnvironmentsFactoryTest {
         val prod = Env.Production(Any(), Any())
         val envs = EnvironmentsFactory<EnvKey, Env>()
             .setActive(EnvKey.Release)
-            .addEnvironment(EnvKey.Release, prod)
+            .addEnvironment(EnvKey.Release) { prod }
             .build()
 
-        assertThat(envs.available).containsEntry(EnvKey.Release, prod)
+        assertThat(envs.available).containsKey(EnvKey.Release)
 
         runBlockingTest {
             assertThat(envs.current()).isSameInstanceAs(prod)
@@ -53,7 +61,7 @@ class EnvironmentsFactoryTest {
         try {
             EnvironmentsFactory<EnvKey, Env>()
                 .setActive(EnvKey.Debug)
-                .addEnvironment(EnvKey.Release, Env.Production(Any(), Any()))
+                .addEnvironment(EnvKey.Release) { Env.Production(Any(), Any()) }
                 .build()
             assert(false)
         } catch (ok: Throwable) {
