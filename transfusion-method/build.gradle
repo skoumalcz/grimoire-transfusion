@@ -1,5 +1,6 @@
 plugins {
     id 'project.build'
+    id("com.vanniktech.maven.publish")
 }
 
 android {
@@ -18,6 +19,6 @@ dependencies {
     compileOnly("androidx.activity:activity:1.1.0")
     compileOnly("androidx.lifecycle:lifecycle-runtime-ktx:2.2.0")
 
-    implementation("com.skoumal.grimoire:talisman-seal:1.0.0-beta01")
+    implementation("com.skoumal.grimoire:talisman-seal:1.0.0")
 
 }

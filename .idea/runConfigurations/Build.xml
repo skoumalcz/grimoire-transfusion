@@ -11,8 +11,6 @@
       <option name="taskNames">
         <list>
           <option value="assembleRelease" />
-          <option value="androidJavadocJar" />
-          <option value="androidSourcesJar" />
         </list>
       </option>
       <option name="vmOptions" value="" />

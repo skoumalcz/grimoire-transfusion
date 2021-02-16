@@ -9,9 +9,7 @@
         <list />
       </option>
       <option name="taskNames">
-        <list>
-          <option value="publishBintrayPublicationPublicationToMavenLocal" />
-        </list>
+        <list />
       </option>
       <option name="vmOptions" value="" />
     </ExternalSystemSettings>
