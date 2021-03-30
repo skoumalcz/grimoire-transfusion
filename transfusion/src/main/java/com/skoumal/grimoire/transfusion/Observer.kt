@@ -27,6 +27,14 @@ interface Observer : Observable {
      * */
     fun notifyPropertyChanged(sender: Observable, fieldId: Int)
 
+    /**
+     * Clears all observers from this object unconditionally. It should only be called right after
+     * lifecycle switches to DESTROYED. Any other state could produce undesired effects.
+     *
+     * If no callback was registered before, it does nothing.
+     * */
+    fun clear()
+
     companion object {
 
         fun getDefault(): Observer = DefaultObserver()
@@ -63,6 +71,10 @@ private class DefaultObserver : Observer {
         callbacks?.notifyCallbacks(sender, fieldId, null)
     }
 
+    @Synchronized
+    override fun clear() {
+        callbacks?.clear()
+    }
 }
 
 // region Extensions
