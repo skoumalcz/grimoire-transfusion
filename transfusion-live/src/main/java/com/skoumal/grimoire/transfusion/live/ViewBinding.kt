@@ -79,7 +79,9 @@ class InLifecycleOwnerBinder<B : ViewBinding>(
     }
 
     private fun createBinding(activity: Activity): B {
-        val view = activity.window.decorView.findViewById<ViewGroup>(android.R.id.content)
+        val view = activity.window.decorView
+            .findViewById<ViewGroup>(android.R.id.content)
+            .getChildAt(0)
         return method.invoke(null, view) as B
     }
 
