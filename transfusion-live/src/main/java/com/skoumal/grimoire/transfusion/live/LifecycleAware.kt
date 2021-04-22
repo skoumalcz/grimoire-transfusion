@@ -1,6 +1,7 @@
 package com.skoumal.grimoire.transfusion.live
 
 import android.util.Log
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -122,3 +123,19 @@ fun <T : Any> LifecycleOwner.lifecycleAware(creator: () -> T): ReadOnlyProperty<
  * */
 fun <T : Any> LifecycleOwner.lifecycleAware(default: T? = null): ReadWriteProperty<LifecycleOwner, T> =
     MutableLifecycleAware(default, this)
+
+/**
+ * Provides common way to initialize [LifecycleAware] or [MutableLifecycleAware].
+ * @see LifecycleAware
+ * @see MutableLifecycleAware
+ * */
+fun <T : Any> Fragment.viewLifecycleAware(creator: () -> T): ReadOnlyProperty<LifecycleOwner, T> =
+    LifecycleAware(creator, viewLifecycleOwner)
+
+/**
+ * Provides common way to initialize [LifecycleAware] or [MutableLifecycleAware].
+ * @see LifecycleAware
+ * @see MutableLifecycleAware
+ * */
+fun <T : Any> Fragment.lifecycleAware(default: T? = null): ReadWriteProperty<LifecycleOwner, T> =
+    MutableLifecycleAware(default, viewLifecycleOwner)
