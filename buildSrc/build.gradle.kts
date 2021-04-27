@@ -18,7 +18,7 @@ dependencies {
     compileOnly(gradleApi())
 
     implementation("com.android.tools.build:gradle:4.1.1")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.30")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.32")
     implementation("com.skoumal.grimoire:cover:1.0.0-beta03")
 
 }

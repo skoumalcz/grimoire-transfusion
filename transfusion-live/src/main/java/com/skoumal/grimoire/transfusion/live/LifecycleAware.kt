@@ -2,9 +2,10 @@ package com.skoumal.grimoire.transfusion.live
 
 import android.util.Log
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.OnLifecycleEvent
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -26,7 +27,7 @@ import kotlin.reflect.KProperty
 class LifecycleAware<T : Any> internal constructor(
     private val creator: () -> T,
     owner: LifecycleOwner
-) : ReadOnlyProperty<LifecycleOwner, T>, DefaultLifecycleObserver {
+) : ReadOnlyProperty<LifecycleOwner, T>, LifecycleObserver {
 
     private var value: T? = null
 
@@ -44,7 +45,8 @@ class LifecycleAware<T : Any> internal constructor(
         }
     }
 
-    override fun onDestroy(owner: LifecycleOwner) {
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy(owner: LifecycleOwner) {
         owner.lifecycle.removeObserver(this)
         value = null
     }
@@ -70,7 +72,7 @@ class LifecycleAware<T : Any> internal constructor(
 class MutableLifecycleAware<T : Any> internal constructor(
     default: T? = null,
     owner: LifecycleOwner
-) : ReadWriteProperty<LifecycleOwner, T>, DefaultLifecycleObserver {
+) : ReadWriteProperty<LifecycleOwner, T>, LifecycleObserver {
 
     @Volatile
     private var value: T? = default
@@ -101,7 +103,8 @@ class MutableLifecycleAware<T : Any> internal constructor(
         this.value = value
     }
 
-    override fun onDestroy(owner: LifecycleOwner) {
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy(owner: LifecycleOwner) {
         owner.lifecycle.removeObserver(this)
         value = null
     }

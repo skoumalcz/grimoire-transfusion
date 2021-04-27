@@ -4,8 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.OnLifecycleEvent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -41,8 +43,10 @@ private fun <I, O> LifecycleOwner.contract(
     channel: Channel<O?>,
     launcher: ActivityResultLauncher<I>
 ): ContractFlow<I, O?> {
-    lifecycle.addObserver(object : DefaultLifecycleObserver {
-        override fun onDestroy(owner: LifecycleOwner) {
+    lifecycle.addObserver(object : LifecycleObserver {
+        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        fun onDestroy(owner: LifecycleOwner) {
+            channel.close()
             launcher.unregister()
         }
     })

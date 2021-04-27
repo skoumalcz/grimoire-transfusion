@@ -8,9 +8,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.OnLifecycleEvent
 import androidx.viewbinding.ViewBinding
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -49,7 +50,7 @@ class InViewBinder<B : ViewBinding>(
 class InLifecycleOwnerBinder<B : ViewBinding>(
     klass: Class<B>,
     owner: LifecycleOwner
-) : ReadOnlyProperty<LifecycleOwner, B>, DefaultLifecycleObserver {
+) : ReadOnlyProperty<LifecycleOwner, B>, LifecycleObserver {
 
     private var binding: B? = null
     private val method = klass.getMethod(BIND, View::class.java)
@@ -85,7 +86,8 @@ class InLifecycleOwnerBinder<B : ViewBinding>(
         return method.invoke(null, view) as B
     }
 
-    override fun onDestroy(owner: LifecycleOwner) {
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy(owner: LifecycleOwner) {
         owner.lifecycle.removeObserver(this)
         val b = binding ?: return
         if (b is ViewDataBinding) {
