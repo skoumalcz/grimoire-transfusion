@@ -9,6 +9,8 @@ import androidx.lifecycle.OnLifecycleEvent
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KProperty0
+import kotlin.reflect.jvm.isAccessible
 
 /**
  * Property allows consumers to create value dynamically with [creator] and dispose it automatically
@@ -67,6 +69,18 @@ class LifecycleAware<T : Any> internal constructor(
  * assigns the value in [Lifecycle.State.DESTROYED] state, it will be ignored, as callback has
  * already been called and it would likely cause memory leaks.
  *
+ * If you need to check whether the value was initialized call [getLifecycleAwareDelegate] on your
+ * property and check with [isNotNull].
+ *
+ * ```kotlin
+ * var prop by lifecycleAware()
+ *
+ * fun assignIfNotInitialized() {
+ *     val isNotNull = this::prop.getLifecycleAwareDelegate()?.isNotNull
+ *     // handle the assignment
+ * }
+ * ```
+ *
  * @throws IllegalArgumentException If accessed beyond the lifecycle scope (ie. [Lifecycle.State.DESTROYED])
  * */
 class MutableLifecycleAware<T : Any> internal constructor(
@@ -76,6 +90,8 @@ class MutableLifecycleAware<T : Any> internal constructor(
 
     @Volatile
     private var value: T? = default
+
+    val isNotNull get() = value != null
 
     init {
         owner.lifecycle.addObserver(this)
@@ -142,3 +158,34 @@ fun <T : Any> Fragment.viewLifecycleAware(creator: () -> T): ReadOnlyProperty<Li
  * */
 fun <T : Any> Fragment.lifecycleAware(default: T? = null): ReadWriteProperty<LifecycleOwner, T> =
     MutableLifecycleAware(default, viewLifecycleOwner)
+
+// ---
+
+/**
+ * Marks this [KProperty0] accessible temporarily and retrieves its delegate. It checks whether
+ * this delegate conforms to [MutableLifecycleAware] type and returns the value. If for whatever
+ * reason this field doesn't contain the delegate or the delegate is erased then the result is
+ * null.
+ *
+ * After the delegate's been retrieved, the field is marked accessible as per its initial state.
+ *
+ * @return instance of current [MutableLifecycleAware] or null
+ * */
+fun <T : Any> KProperty0<T>.getLifecycleAwareDelegate(): MutableLifecycleAware<T>? {
+    val wasAccessible = isAccessible
+    isAccessible = true
+    val delegate = getDelegate() as? MutableLifecycleAware<T>
+    isAccessible = wasAccessible
+    return delegate
+}
+
+/**
+ * Behaves in the similar to [getLifecycleAwareDelegate], but throws [IllegalArgumentException]
+ * if the [MutableLifecycleAware] is null or cannot be retrieved
+ *
+ * @see getLifecycleAwareDelegate
+ * @return instance of current [MutableLifecycleAware]
+ * @throws IllegalArgumentException when [MutableLifecycleAware] cannot be found
+ * */
+fun <T : Any> KProperty0<T>.requireLifecycleAwareDelegate() =
+    requireNotNull(getLifecycleAwareDelegate())
