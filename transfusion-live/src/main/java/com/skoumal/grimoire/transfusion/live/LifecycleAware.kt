@@ -27,29 +27,30 @@ import kotlin.reflect.jvm.isAccessible
  * @throws Throwable If [creator] fails to provide the object it rethrows the exception
  * */
 class LifecycleAware<T : Any> internal constructor(
-    private val creator: () -> T,
-    owner: LifecycleOwner
+    private val registrar: LifecycleRegistrar,
+    private val creator: () -> T
 ) : ReadOnlyProperty<LifecycleOwner, T>, LifecycleObserver {
 
+    @Volatile
     private var value: T? = null
 
-    init {
-        owner.lifecycle.addObserver(this)
-    }
-
     override fun getValue(thisRef: LifecycleOwner, property: KProperty<*>): T {
-        require(thisRef.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) {
-            "Fetching this value requires at least initialized state!"
+        require(registrar.isReadPermitted(thisRef)) {
+            "Cannot return value before lifecycle initializes"
         }
 
-        return synchronized(this) {
-            value ?: creator().also { value = it }
+        registrar.register(thisRef, this)
+
+        return value ?: synchronized(this) {
+            value ?: creator().also {
+                value = it
+            }
         }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun onDestroy(owner: LifecycleOwner) {
-        owner.lifecycle.removeObserver(this)
+        registrar.unregister(owner, this)
         value = null
     }
 
@@ -84,34 +85,32 @@ class LifecycleAware<T : Any> internal constructor(
  * @throws IllegalArgumentException If accessed beyond the lifecycle scope (ie. [Lifecycle.State.DESTROYED])
  * */
 class MutableLifecycleAware<T : Any> internal constructor(
-    default: T? = null,
-    owner: LifecycleOwner
+    private val registrar: LifecycleRegistrar,
+    default: T? = null
 ) : ReadWriteProperty<LifecycleOwner, T>, LifecycleObserver {
 
     @Volatile
     private var value: T? = default
 
-    val isNotNull get() = value != null
-
-    init {
-        owner.lifecycle.addObserver(this)
-    }
+    val isNotNull
+        get() = value != null
 
     override fun getValue(thisRef: LifecycleOwner, property: KProperty<*>): T {
-        val lifecycle = thisRef.lifecycle
-        require(lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) {
+        require(registrar.isReadPermitted(thisRef)) {
             "Cannot return value before lifecycle initializes"
         }
+
+        registrar.register(thisRef, this)
+
         return value
             ?: throw IllegalStateException("Cannot return internal value. It's never been assigned.")
     }
 
     override fun setValue(thisRef: LifecycleOwner, property: KProperty<*>, value: T) {
-        val lifecycle = thisRef.lifecycle
-        if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {
+        if (!registrar.isReadPermitted(thisRef)) {
             Log.e(
                 "MutableLifecycleAware",
-                "Saving value to ${thisRef::class.java} is not permitted after being destroyed. Ignoring value silently…"
+                "Saving value ($value) to ${thisRef::class.java} is not permitted after being destroyed. This can cause leaks, therefore ignoring value silently…"
             )
             return
         }
@@ -132,32 +131,87 @@ class MutableLifecycleAware<T : Any> internal constructor(
  * @see LifecycleAware
  * @see MutableLifecycleAware
  * */
-fun <T : Any> LifecycleOwner.lifecycleAware(creator: () -> T): ReadOnlyProperty<LifecycleOwner, T> =
-    LifecycleAware(creator, this)
+fun <T : Any> lifecycleAware(creator: () -> T): ReadOnlyProperty<LifecycleOwner, T> =
+    LifecycleAware(creator = creator, registrar = DefaultLifecycleRegistrar())
 
 /**
  * Provides common way to initialize [LifecycleAware] or [MutableLifecycleAware].
  * @see LifecycleAware
  * @see MutableLifecycleAware
  * */
-fun <T : Any> LifecycleOwner.lifecycleAware(default: T? = null): ReadWriteProperty<LifecycleOwner, T> =
-    MutableLifecycleAware(default, this)
+fun <T : Any> lifecycleAware(default: T? = null): ReadWriteProperty<LifecycleOwner, T> =
+    MutableLifecycleAware(default = default, registrar = DefaultLifecycleRegistrar())
 
 /**
  * Provides common way to initialize [LifecycleAware] or [MutableLifecycleAware].
  * @see LifecycleAware
  * @see MutableLifecycleAware
  * */
-fun <T : Any> Fragment.viewLifecycleAware(creator: () -> T): ReadOnlyProperty<LifecycleOwner, T> =
-    LifecycleAware(creator, viewLifecycleOwner)
+fun <T : Any> viewLifecycleAware(creator: () -> T): ReadOnlyProperty<LifecycleOwner, T> =
+    LifecycleAware(creator = creator, registrar = ViewLifecycleRegistrar())
 
 /**
  * Provides common way to initialize [LifecycleAware] or [MutableLifecycleAware].
  * @see LifecycleAware
  * @see MutableLifecycleAware
  * */
-fun <T : Any> Fragment.lifecycleAware(default: T? = null): ReadWriteProperty<LifecycleOwner, T> =
-    MutableLifecycleAware(default, viewLifecycleOwner)
+fun <T : Any> viewLifecycleAware(default: T? = null): ReadWriteProperty<LifecycleOwner, T> =
+    MutableLifecycleAware(default = default, registrar = ViewLifecycleRegistrar())
+
+// ---
+
+/* Helps with registering and unregistering observers on demand in very specific*/
+interface LifecycleRegistrar {
+
+    fun isReadPermitted(owner: LifecycleOwner): Boolean
+    fun register(owner: LifecycleOwner, observer: LifecycleObserver)
+    fun unregister(owner: LifecycleOwner, observer: LifecycleObserver)
+
+}
+
+private open class DefaultLifecycleRegistrar : LifecycleRegistrar {
+
+    private var registeredOwner: Int = 0
+
+    override fun isReadPermitted(owner: LifecycleOwner): Boolean {
+        return owner.lifecycle.currentState >= Lifecycle.State.INITIALIZED
+    }
+
+    @Synchronized
+    override fun register(owner: LifecycleOwner, observer: LifecycleObserver) {
+        val hashCode = owner.hashCode()
+        if (registeredOwner == 0 || registeredOwner != hashCode) {
+            owner.lifecycle.addObserver(observer)
+            registeredOwner = hashCode
+        }
+    }
+
+    override fun unregister(owner: LifecycleOwner, observer: LifecycleObserver) {
+        owner.lifecycle.removeObserver(observer)
+    }
+
+}
+
+private class ViewLifecycleRegistrar : DefaultLifecycleRegistrar() {
+
+    override fun isReadPermitted(owner: LifecycleOwner): Boolean {
+        return super.isReadPermitted(chooseOwner(owner))
+    }
+
+    override fun register(owner: LifecycleOwner, observer: LifecycleObserver) {
+        super.register(chooseOwner(owner), observer)
+    }
+
+    override fun unregister(owner: LifecycleOwner, observer: LifecycleObserver) {
+        super.unregister(chooseOwner(owner), observer)
+    }
+
+    private fun chooseOwner(owner: LifecycleOwner) = when (owner) {
+        is Fragment -> owner.viewLifecycleOwner
+        else -> owner
+    }
+
+}
 
 // ---
 
@@ -180,7 +234,7 @@ fun <T : Any> KProperty0<T>.getLifecycleAwareDelegate(): MutableLifecycleAware<T
 }
 
 /**
- * Behaves in the similar to [getLifecycleAwareDelegate], but throws [IllegalArgumentException]
+ * Behaves in a similar way to [getLifecycleAwareDelegate], but throws [IllegalArgumentException]
  * if the [MutableLifecycleAware] is null or cannot be retrieved
  *
  * @see getLifecycleAwareDelegate

@@ -25,7 +25,7 @@ class LifecycleAwareTest {
         value = String(nextBytes(nextInt(0, 100)))
         creator = { value }
         owner = TestLifecycleOwner()
-        observer = LifecycleAware(creator, owner)
+        observer = LifecycleAware(creator = creator)
     }
 
     @After
