@@ -61,7 +61,7 @@ jobs:
         uses: android-actions/setup-android@v2
 
       - name: Build Library
-        run: ./gradlew --no-daemon assembleRelease publish
+        run: ./gradlew --no-daemon --no-parallel assembleRelease publish
 
       - name: Build Library
         run: ./gradlew closeAndReleaseRepository
