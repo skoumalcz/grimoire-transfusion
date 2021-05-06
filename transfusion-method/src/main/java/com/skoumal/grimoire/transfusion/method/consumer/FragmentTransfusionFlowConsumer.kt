@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
+@Deprecated("Use TransfusionLifecycleConsumer")
 internal class FragmentTransfusionFlowConsumer<C : Cell>(
     private val fragment: Fragment,
     scope: CoroutineScope

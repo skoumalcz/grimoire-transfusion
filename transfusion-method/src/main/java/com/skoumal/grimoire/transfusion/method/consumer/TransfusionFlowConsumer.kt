@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.Flow
  * You are obligated to save this object and call [stop][TransfusionFlowConsumer.stop] when
  * framework calls [onDestroy][ComponentActivity.onDestroy].
  * */
-@Suppress("FunctionName")
+@Deprecated("Use automatically managed TransfusionLifecycleConsumer via LifecycleOwner.transfusion {}. This API will be removed in 2.0.0")
+@Suppress("FunctionName", "DeprecatedCallableAddReplaceWith")
 fun <C : Cell> Flow<C>.consumeIn(
     activity: ComponentActivity
 ): TransfusionFlowConsumer<C> = ActivityTransfusionFlowConsumer<C>(
@@ -32,7 +33,8 @@ fun <C : Cell> Flow<C>.consumeIn(
  * You are obligated to save this object and call [stop][TransfusionFlowConsumer.stop] when
  * framework calls [onDestroyView][Fragment.onDestroyView].
  * */
-@Suppress("FunctionName")
+@Deprecated("Use automatically managed TransfusionLifecycleConsumer via LifecycleOwner.transfusion {}. This API will be removed in 2.0.0")
+@Suppress("FunctionName", "DeprecatedCallableAddReplaceWith")
 fun <C : Cell> Flow<C>.consumeIn(
     fragment: Fragment
 ): TransfusionFlowConsumer<C> = FragmentTransfusionFlowConsumer<C>(
@@ -42,14 +44,17 @@ fun <C : Cell> Flow<C>.consumeIn(
     it.digest(this)
 }
 
+@Deprecated("Use automatically managed TransfusionLifecycleConsumer via LifecycleOwner.transfusion {}. This API will be removed in 2.0.0")
 internal interface OrderedTransfusionFlowConsumer<C : Cell> : TransfusionFlowConsumer<C> {
 
     fun digest(flow: Flow<C>)
 
 }
 
+@Deprecated("Use automatically managed TransfusionLifecycleConsumer via LifecycleOwner.transfusion {}. This API will be removed in 2.0.0")
 interface TransfusionFlowConsumer<C : Cell> {
 
+    @Deprecated("Use automatically managed TransfusionLifecycleConsumer via LifecycleOwner.transfusion {}. This API will be removed in 2.0.0")
     fun stop()
 
 }

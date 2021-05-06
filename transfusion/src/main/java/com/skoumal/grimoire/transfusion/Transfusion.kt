@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
  * class MyViewModel: ViewModel(), Transfusion<Cell> by Transfusion.getDefault()
  * ```
  *
- * @see com.skoumal.grimoire.transfusion.method.consumer.consumeIn for the reference on how to
+ * @see com.skoumal.grimoire.transfusion.method.consumer.transfusion for the reference on how to
  * consume the flows correctly
  * */
 @OptIn(ExperimentalCoroutinesApi::class)

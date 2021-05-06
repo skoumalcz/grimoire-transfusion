@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
+@Deprecated("Use TransfusionLifecycleConsumer")
 internal class ActivityTransfusionFlowConsumer<C : Cell>(
     private val activity: ComponentActivity,
     scope: CoroutineScope
