@@ -24,7 +24,10 @@ class MutableLifecycleAwareTest {
     fun prepare() {
         initialValue = String(nextBytes(nextInt(1, 100)))
         owner = TestLifecycleOwner()
-        observer = MutableLifecycleAware(default = initialValue)
+        observer = MutableLifecycleAware(
+            default = initialValue,
+            registrar = TestLifecycleRegistrar()
+        )
     }
 
     @After
@@ -54,7 +57,7 @@ class MutableLifecycleAwareTest {
 
     @Test(expected = IllegalStateException::class)
     fun requiresInitialValue() {
-        val empty = MutableLifecycleAware<String>()
+        val empty = MutableLifecycleAware<String>(TestLifecycleRegistrar())
         empty.getValue(owner, this::observer)
         assert(false) {
             "Value should require default value"
@@ -64,7 +67,7 @@ class MutableLifecycleAwareTest {
     @Test
     fun checkHasNoValue() {
         val tested = object : LifecycleOwner by owner {
-            var prop by MutableLifecycleAware<String>()
+            var prop by MutableLifecycleAware<String>(TestLifecycleRegistrar())
         }
         val propIsNotNull = tested::prop.requireLifecycleAwareDelegate().isNotNull
         assert(!propIsNotNull) {
