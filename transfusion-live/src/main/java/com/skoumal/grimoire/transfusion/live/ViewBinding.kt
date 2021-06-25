@@ -62,9 +62,15 @@ class InLifecycleOwnerBinder<B : ViewBinding>(
     override fun getValue(thisRef: LifecycleOwner, property: KProperty<*>): B {
         require(thisRef.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED))
 
-        return synchronized(this) {
+        val binding = binding ?: synchronized(this) {
             binding ?: tryCreateBinding(thisRef).also { binding = it }
         }
+
+        if (binding is ViewDataBinding) {
+            binding.lifecycleOwner = findLifecycleOwner(thisRef)
+        }
+
+        return binding
     }
 
     private fun tryCreateBinding(owner: LifecycleOwner): B {
@@ -72,6 +78,13 @@ class InLifecycleOwnerBinder<B : ViewBinding>(
             is Fragment -> createBinding(owner)
             is Activity -> createBinding(owner)
             else -> throw IllegalArgumentException("Unknown lifecycle owner")
+        }
+    }
+
+    private fun findLifecycleOwner(owner: LifecycleOwner): LifecycleOwner {
+        return when (owner) {
+            is Fragment -> owner.viewLifecycleOwner
+            else -> owner
         }
     }
 
