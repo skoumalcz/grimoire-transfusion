@@ -48,29 +48,25 @@ class InViewBinder<B : ViewBinding>(
 }
 
 class InLifecycleOwnerBinder<B : ViewBinding>(
-    klass: Class<B>,
-    owner: LifecycleOwner
+    klass: Class<B>
 ) : ReadOnlyProperty<LifecycleOwner, B>, LifecycleObserver {
 
     private var binding: B? = null
     private val method = klass.getMethod(BIND, View::class.java)
 
-    init {
-        owner.lifecycle.addObserver(this)
-    }
-
     override fun getValue(thisRef: LifecycleOwner, property: KProperty<*>): B {
-        require(thisRef.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED))
-
-        val binding = binding ?: synchronized(this) {
-            binding ?: tryCreateBinding(thisRef).also { binding = it }
+        val viewOwner = when (thisRef) {
+            is Fragment -> thisRef.viewLifecycleOwner
+            else -> thisRef
         }
 
-        if (binding is ViewDataBinding) {
-            binding.lifecycleOwner = findLifecycleOwner(thisRef)
-        }
+        require(viewOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED))
 
-        return binding
+        return this.binding ?: synchronized(this) {
+            this.binding ?: tryCreateBinding(thisRef)
+                .applyLifecycleOwner(viewOwner)
+                .also { this.binding = it }
+        }
     }
 
     private fun tryCreateBinding(owner: LifecycleOwner): B {
@@ -81,12 +77,16 @@ class InLifecycleOwnerBinder<B : ViewBinding>(
         }
     }
 
-    private fun findLifecycleOwner(owner: LifecycleOwner): LifecycleOwner {
-        return when (owner) {
-            is Fragment -> owner.viewLifecycleOwner
-            else -> owner
+    // ---
+
+    private fun B.applyLifecycleOwner(owner: LifecycleOwner) = apply {
+        owner.lifecycle.addObserver(this@InLifecycleOwnerBinder)
+        if (this is ViewDataBinding) {
+            lifecycleOwner = owner
         }
     }
+
+    // ---
 
     private fun createBinding(fragment: Fragment): B {
         return method.invoke(null, fragment.requireView()) as B
@@ -98,6 +98,8 @@ class InLifecycleOwnerBinder<B : ViewBinding>(
             .getChildAt(0)
         return method.invoke(null, view) as B
     }
+
+    // ---
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun onDestroy(owner: LifecycleOwner) {
@@ -130,5 +132,5 @@ inline fun <reified B : ViewBinding> ViewGroup.viewBinding(): ReadOnlyProperty<V
  * [getValue]. [getValue] cannot be called before [Lifecycle.State.INITIALIZED] due to obvious
  * view-based limitations.
  * */
-inline fun <reified B : ViewBinding> LifecycleOwner.viewBinding(): ReadOnlyProperty<LifecycleOwner, B> =
-    InLifecycleOwnerBinder(B::class.java, this)
+inline fun <reified B : ViewBinding> viewBinding(): ReadOnlyProperty<LifecycleOwner, B> =
+    InLifecycleOwnerBinder(B::class.java)
