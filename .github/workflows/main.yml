@@ -64,4 +64,4 @@ jobs:
         run: ./gradlew --no-daemon --no-parallel assembleRelease publish
 
       - name: Build Library
-        run: ./gradlew closeAndReleaseRepository
+        run: ./gradlew --no-daemon --no-parallel closeAndReleaseRepository
